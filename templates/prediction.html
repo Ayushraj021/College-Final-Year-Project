@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Disease Prediction</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background: url('{{ url_for("static", filename="depositphotos_207489914-stock-photo-medical-doctor-stethoscope-light-background.jpg") }}') no-repeat center center fixed;
+            background-size: cover;
+            background-attachment: fixed; /* This makes the background image static */
+            color: #ffffff;
+            text-align: center;
+            padding: 50px;
+            margin: 0;
+        }
+        
+        h1 {
+            color: #ffffff;
+            margin-bottom: 20px;
+            text-shadow: 2px 2px 4px #000000;
+        }
+        h2 {
+            color: #ffffff;
+            margin-bottom: 30px;
+            text-shadow: 2px 2px 4px #000000;
+            font-weight: normal;
+        }
+        form {
+            display: inline-block;
+            background: rgba(255, 255, 255, 0); /* Adjust the alpha value to control transparency */
+            padding: 20px;
+            border-radius: 8px;
+            /* Remove box-shadow */
+            margin-top: 20px;
+        }
+        textarea, button {
+            display: block;
+            margin: 10px auto;
+            padding: 10px;
+            font-size: 16px;
+            width: 80%;
+            max-width: 300px;
+        }
+        textarea {
+            height: 100px;
+        }
+        button {
+            background-color: #007bff;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        #result {
+            font-size: 20px;
+            margin-top: 20px;
+            font-weight: bold;
+            color: #ffcc00;
+            text-shadow: 2px 2px 4px #000000;
+        }
+        #error {
+            font-size: 20px;
+            margin-top: 20px;
+            font-weight: bold;
+            color: #ff0000;
+            text-shadow: 2px 2px 4px #000000;
+        }
+        #symptoms-list {
+            margin-top: 30px;
+            text-align: left;
+            display: inline-block;
+            background: rgba(0, 0, 0, 0.5); /* Adjust the alpha value to control transparency */
+            padding: 20px;
+            border-radius: 8px;
+        }
+        #symptoms-list h3 {
+            color: #ffffff;
+            text-shadow: 2px 2px 4px #000000;
+        }
+        #symptoms-list ul {
+            list-style-type: none;
+            padding: 0;
+            color: #ffffff;
+            text-shadow: 2px 2px 4px #000000;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        #symptoms-list ul li {
+            margin: 5px 0;
+            cursor: pointer;
+        }
+        #symptoms-list ul li:hover {
+            color: #ffcc00;
+        }
+    </style>
+</head>
+<body>
+    <h1>Disease Prediction System</h1>
+    <h2>Stay Home, Use This Site, Help Society</h2>
+    <form id="predictionForm">
+        <textarea id="symptoms" placeholder="Enter symptoms separated by commas (e.g., Fever, Headache, Cough)"></textarea>
+        <button type="button" onclick="predict()">Predict</button>
+    </form>
+    <p id="result"></p>
+    <p id="error"></p>
+
+    <div id="symptoms-list">
+        <h3>Possible Symptoms:</h3>
+        <ul id="symptoms-ul">
+           
+        </ul>
+    </div>
+
+    <script>
+        const symptomsArray = [
+            "itching", "skin_rash", "nodal_skin_eruptions", "continuous_sneezing", "shivering", "chills", 
+            "joint_pain", "stomach_pain", "acidity", "ulcers_on_tongue", "muscle_wasting", "vomiting", 
+            "burning_micturition", "spotting_urination", "fatigue", "weight_gain", "anxiety", 
+            "cold_hands_and_feets", "mood_swings", "weight_loss", "restlessness", "lethargy", 
+            "patches_in_throat", "irregular_sugar_level", "cough", "high_fever", "sunken_eyes", 
+            "breathlessness", "sweating", "dehydration", "indigestion", "headache", "yellowish_skin", 
+            "dark_urine", "nausea", "loss_of_appetite", "pain_behind_the_eyes", "back_pain", 
+            "constipation", "abdominal_pain", "diarrhoea", "mild_fever", "yellow_urine", 
+            "yellowing_of_eyes", "acute_liver_failure", "fluid_overload", "swelling_of_stomach", 
+            "swelled_lymph_nodes", "malaise", "blurred_and_distorted_vision", "phlegm", 
+            "throat_irritation", "redness_of_eyes", "sinus_pressure", "runny_nose", "congestion", 
+            "chest_pain", "weakness_in_limbs", "fast_heart_rate", "pain_during_bowel_movements", 
+            "pain_in_anal_region", "bloody_stool", "irritation_in_anus", "neck_pain", "dizziness", 
+            "cramps", "bruising", "obesity", "swollen_legs", "swollen_blood_vessels", 
+            "puffy_face_and_eyes", "enlarged_thyroid", "brittle_nails", "swollen_extremeties", 
+            "excessive_hunger", "extra_marital_contacts", "drying_and_tingling_lips", "slurred_speech", 
+            "knee_pain", "hip_joint_pain", "muscle_weakness", "stiff_neck", "swelling_joints", 
+            "movement_stiffness", "spinning_movements", "loss_of_balance", "unsteadiness", 
+            "weakness_of_one_body_side", "loss_of_smell", "bladder_discomfort", "foul_smell_of_urine", 
+            "continuous_feel_of_urine", "passage_of_gases", "internal_itching", "toxic_look_(typhos)", 
+            "depression", "irritability", "muscle_pain", "altered_sensorium", "red_spots_over_body", 
+            "belly_pain", "abnormal_menstruation", "dischromic_patches", "watering_from_eyes", 
+            "increased_appetite", "polyuria", "family_history", "mucoid_sputum", "rusty_sputum", 
+            "lack_of_concentration", "visual_disturbances", "receiving_blood_transfusion", 
+            "receiving_unsterile_injections", "coma", "stomach_bleeding", "distention_of_abdomen", 
+            "history_of_alcohol_consumption", "fluid_overload", "blood_in_sputum", 
+            "prominent_veins_on_calf", "palpitations", "painful_walking", "pus_filled_pimples", 
+            "blackheads", "scurring", "skin_peeling", "silver_like_dusting", "small_dents_in_nails", 
+            "inflammatory_nails", "blister", "red_sore_around_nose", "yellow_crust_ooze", 
+            "prognosis"
+        ];
+
+        const formattedSymptoms = symptomsArray.map(symptom => {
+            return symptom.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+        });
+
+        const symptomsUL = document.getElementById('symptoms-ul');
+        formattedSymptoms.forEach(symptom => {
+            const li = document.createElement('li');
+            li.innerText = symptom;
+            li.onclick = () => addSymptom(symptom);
+            symptomsUL.appendChild(li);
+        });
+
+        function addSymptom(symptom) {
+            const symptomsInput = document.getElementById('symptoms');
+            const currentSymptoms = symptomsInput.value.split(',').map(s => s.trim()).filter(s => s.length > 0);
+            if (!currentSymptoms.includes(symptom)) {
+                currentSymptoms.push(symptom);
+                symptomsInput.value = currentSymptoms.join(', ');
+            }
+        }
+
+        async function predict() {
+            const symptoms = document.getElementById('symptoms').value;
+            const resultElement = document.getElementById('result');
+            const errorElement = document.getElementById('error');
+            
+            resultElement.innerText = '';
+            errorElement.innerText = '';
+
+            if (symptoms.trim() === '') {
+                errorElement.innerText = 'Please enter the symptoms';
+                return;
+            }
+
+            try {
+                const response = await fetch('/predict', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded'
+                    },
+                    body: new URLSearchParams({ symptoms: symptoms })
+                });
+                if (!response.ok) throw new Error(`HTTP error status: ${response.status}`);
+                const data = await response.json();
+                if ('error' in data) {
+                    errorElement.innerText = data.error;
+                } else {
+                    resultElement.innerText = `Prediction: ${data.disease}`;
+                }
+            } catch (error) {
+                console.error('There was a problem with the fetch operation:', error);
+                errorElement.innerText = 'There was an error processing your request.';
+            }
+        }
+    </script>
+</body>
+</html>
